@@ -1,13 +1,7 @@
 ﻿using NUnit.Framework;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Selenium_Test
 {
@@ -21,47 +15,64 @@ namespace Selenium_Test
         {
             driver = new ChromeDriver();
         }
+
         [Test]
         public void GoToPage()
         {
-            GoToWebPage();            
+            GoToWebPage();
         }
         [Test]
         public void FindLink()
         {
             string xPathNext = "//a[contains(text(), 'Volgende')]";
             bool linkFound = false;
+            IWebElement elem;
 
             GoToWebPage();
             Thread.Sleep(2000); //site is wat traag waardoor de elementen niet altijd gevonden worden
-            IWebElement elem = driver.FindElement(By.Id("vlw-search"));
-            elem.SendKeys("Burgerprofiel");
-            elem.Submit();            
-            Thread.Sleep(1500);                       
 
-            while (ElementExist(By.XPath(xPathNext)) && !linkFound)
-            {                
+            try
+            {
+                elem = driver.FindElement(By.Id("vlw-search"));
+            }
+            catch (NoSuchElementException)
+            {
+                Assert.IsTrue(false, "element niet gevonden vlw-search");
+                return;
+            }
+            
+            elem.SendKeys("Burgerprofiel");
+            elem.Submit();
+            Thread.Sleep(1500);
+            do
+            {
                 if (ElementExist(By.XPath("//a[contains(., 'COVID-certificaat - het vaccinatiecertificaat')]")))
                 {
                     linkFound = true;
                     driver.FindElement(
                         By.XPath("//a[contains(., 'COVID-certificaat - het vaccinatiecertificaat')]"))
-                        .Click();                                        
+                        .Click();
                 }
                 else
                 {
-                    driver.FindElement(By.XPath(xPathNext)).Click();
-                    Thread.Sleep(1500);
+                    if (ElementExist(By.XPath(xPathNext)))
+                    {
+                        driver.FindElement(By.XPath(xPathNext)).Click();
+                        Thread.Sleep(1500);
+                    }
                 }
-                
-            }            
-            Assert.IsTrue(ElementExist(By.XPath("//a[contains(@href, 'reopen.europa.eu')]")));
-            
+            } while (ElementExist(By.XPath(xPathNext)) && !linkFound);
+            if (linkFound)
+            {
+                Assert.IsTrue(ElementExist(By.XPath("//a[contains(@href, 'reopen.europa.eu')]")));
+                return;
+            }
+            Assert.IsTrue(false, "link niet gevonden");
         }
 
         [TearDown]
         public void CloseBrowser()
-        {            
+        {
             driver.Close();
         }
         private void GoToWebPage()
@@ -78,7 +89,7 @@ namespace Selenium_Test
             }
             catch (NoSuchElementException)
             {
-                return false;               
+                return false;
             }
         }
     }
